@@ -1,0 +1,49 @@
+hiSetBindKey("Layout" "<Key>T" "MySklMenu()")
+procedure(MySklMenu()
+	prog((menulist MySklMenu_Form)
+		menulist = list(
+			"CommonCenterMos"
+		)
+		hiCreateAppForm(
+			?name 'MySklMenu_Form
+			?fields list(
+						hiCreateComboField(
+							?name 'menu
+							?prompt "Function"
+							?items menulist
+							?value "CommonCenterMos"
+						)
+						hiCreateRadioField(
+							?name 'postfix
+							?prompt "Add UI()"
+							?choices list("yes" "no")
+							?value "yes"
+						)
+					)
+			?formTitle "Load"
+			?buttonLayout	'OKCancel
+		)
+		unless(hiDisplayForm('MySklMenu_Form)
+			println("Cancel Run")
+			return(nil)
+		)
+		if(MySklMenu_Form~>postfix~>value == "yes" then
+			evalstring(strcat(MySklMenu_Form~>menu~>value "UI()"))
+			else
+				evalstring(MySklMenu_Form~>menu~>value)
+		)
+	)
+)
+
+unless(getd('Tips)
+	procedure(Tips(banner text)
+		prog((Tips_Form)
+			hiDisplayAppDBox(
+				?name 'Tips_Form
+				?dboxBanner banner
+				?buttonLayout 'Close
+				?dboxText text
+			)
+		)
+	)
+)
