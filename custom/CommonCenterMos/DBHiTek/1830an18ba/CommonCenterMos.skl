@@ -1,0 +1,678 @@
+procedure(CommonCenterMosUI()
+	prog((CommonCenterMos_Form type fingers mode point)
+		hiCreateAppForm(
+			?name 'CommonCenterMos_Form
+			?fields list(
+						hiCreateRadioField(
+							?name 'type
+							?prompt "Place Type"
+							?choices list("ABBA" "AABBAABB" "AABBBBAA")
+							?value "ABBA"
+						)
+						hiCreateIntField(
+							?name 'fingers
+							?prompt "Fingers (int)"
+							?value 8
+						)
+						hiCreateRadioField(
+							?name 'mode
+							?prompt "Apply Mode"
+							?choices list("L" "XL")
+							?value "L"
+						)
+						hiCreateRadioField(
+							?name 'point
+							?prompt "Create Point"
+							?choices list("xy" "new")
+							?value "xy"
+						)
+					)
+			?formTitle "Create CommonCenterMos Array"
+			?buttonLayout	'OKCancel
+		)
+		
+		unless(hiDisplayForm('CommonCenterMos_Form)
+			println("Cancel Create CommonCenterMos Array")
+			return(nil)
+		)
+		
+		type = CommonCenterMos_Form~>type~>value
+		fingers = CommonCenterMos_Form~>fingers~>value
+		mode = CommonCenterMos_Form~>mode~>value
+		point = CommonCenterMos_Form~>point~>value
+		
+		CommonCenterMos(type fingers ?mode mode ?point point)
+	)
+)
+
+procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
+	prog((	cv tech ep sel ti cw cl tia sela												;ti is temp info
+			
+			ep_list size index sort dumfigL dumfigR															;define at Place
+			
+			cont_xy_list cont_cols via_xy_list												;gate cont & via
+			end_gate_xy_list end_cont_xy_list end_cont_cols end_via_xy_list end_via_cols	;end gate cont & via
+			dum_cont_xy_list dum_via_xy_list												;dummy cont & via
+			SD_via_y_list SD_via_y SD_via_list												;all source & drain
+			
+			;Rules
+			)
+		
+		/**//******************************/
+		/**/;Rules
+		/**/
+		/**/
+		/**//******************************/
+		
+		cv = geGetEditRep()
+		tech = techGetTechFile(cv)
+		sel = geGetSelSet()
+		
+		unless(length(sel) == 1
+			fingers = length(sel) * 1.0 / 2
+		)
+		if(fingers < 4 then
+			println("Fingers must be >= 4 (All channels >= 8)")
+			Tips("Error" "Fingers must be >= 4\n(All channels >= 8)")
+			return(nil)
+		)
+		cond(
+			(type == "ABBA" || type == "AABBAABB"
+				unless(fix2(fingers / 4.0) == fingers / 4.0
+					println("Fingers must be 4x  (All channels 8x)")
+					Tips("Error" "Fingers must be 4x\n(All channels 8x)")
+					return(nil)
+				)
+			)
+			(type == "AABBBBAA"
+				unless(fix2(fingers / 8.0) == fingers / 8.0
+					println("Fingers must be 8x (All channels 16x)")
+					Tips("Error" "Fingers must be 8x\n(All channels 8x)")
+					return(nil)
+				)
+			)
+			(t
+				println("Type must be ABBA , AABBAABB or AABBBBAA")
+				Tips("Error" "Type must be ABBA , AABBAABB or AABBBBAA")
+				return(nil)
+			)
+		)
+		fingers == fix2(fingers)
+		
+		case(point
+			("xy"
+				ep = css()~>xy
+			)
+			("new"
+				ep = enterPoint()
+			)
+			(t
+				println("Point must be xy or new")
+				Tips("Error" "Point must be xy or new")
+				return(nil)
+			)
+		)
+
+	;----------------------------------------;
+	;Create ---------------------------------；
+		foreach(x sel
+			x~>orient = "R0"
+		)
+		cond(
+			(length(sel) == 0
+				println("Please select figure in advance")
+				Tips("Error" "Please select figure in advance")
+				return(nil)
+			)
+			(length(sel) == 1
+				leHiConvertInstToMosaic()
+				css()~>rows = 2
+				css()~>columns = fingers
+				leHiConvertMosaicToInst()
+				sel = geGetSelSet()
+			)
+			(t
+				if(point == "xy" then
+					ti = 0
+					foreach(x sel~>xy
+						ti += car(x)
+					)
+					ep = list(fix2(ti * 1.0 / length(sel)))
+					ti = 0
+					foreach(x sel~>xy
+						ti += cadr(x)
+					)
+					ep = append1(ep fix2(ti * 1.0 / length(sel)))
+				)
+			)
+		)
+		
+		cw = car(sel)~>fw * 1e6			;channel width
+		cl = car(sel)~>l * 1e6			;channel length
+		geDeselectAllFig()
+		cancelEnterFun()
+		
+	;----------------------------------------;
+	;Place ----------------------------------；
+		case(mode
+			("L"
+				;Row 1
+				ti = ep
+				ep_list = list(ti)
+				for(x 0 length(sel) / 2 - 2
+					ti = car(ti) + 0.54 + cl : cadr(ti)
+					ep_list = append1(ep_list ti)
+					
+				)
+				;Row 2
+				ti = car(ep) : cadr(ep) + 1.36 + cw
+				ep_list = append1(ep_list ti)
+				for(x 0 length(sel) / 2 - 2
+					ti = car(ti) + 0.54 + cl : cadr(ti)
+					ep_list = append1(ep_list ti)
+					
+				)
+			)
+			("XL"
+				ti = nil
+				rexCompile("[A-z]")
+				foreach(x sel~>name
+					ti = append1(ti rexReplace(x "" 0))
+				)
+				foreach(x ti
+					tia = append1(tia evalstring(substring(x 1 nindex(x ".") - 1)))
+				)
+				foreach(x sel
+					if(rexMatchp(strcat("[A-z]" sprintf(nil "%n" apply('min tia))) x~>name) then
+						sela = append1(sela x)
+					)
+				)
+				foreach(x sel
+					unless(rexMatchp(strcat("[A-z]" sprintf(nil "%n" apply('min tia))) x~>name)
+						sela = append1(sela x)
+					)
+				)
+				sel = sela
+				case(type
+					("ABBA"
+						for(x 0 length(sel) / 8 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep) + cw + 1.36)
+						)
+						for(x 0 length(sel) / 8 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep) + cw + 1.36)
+						)
+					)
+					("AABBAABB"
+						for(x 0 length(sel) / 8 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep) + cw + 1.36)
+						)
+						for(x 0 length(sel) / 8 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep) + cw + 1.36)
+						)
+					)
+					("AABBBBAA"
+						for(x 0 length(sel) / 16 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 6) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 7) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 2) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 3) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 4) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 5) : cadr(ep) + cw + 1.36)
+						)
+						for(x 0 length(sel) / 16 - 1
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 4) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 5) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 0) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 1) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 6) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 7) : cadr(ep) + cw + 1.36)
+						)
+					)
+				)
+				
+			)
+		)
+		
+		;All Rows Place
+		for(x 0 length(sel) - 1
+			nth(x sel)~>xy = nth(x ep_list)
+		)
+		
+		;------------------------------------;
+		;Dummy ------------------------------；
+		foreach(x sel
+			if(x~>xy == ep then
+				dumfigL = dbCopyFig(x cv list(-(0.54 + 0.5) : 0 "R0"))
+				dumfigR = dbCopyFig(x cv list(length(sel) * (cl + 0.54) / 2 : 0 "R0"))
+				dumfigL~>l = 0.5 * 1e-06
+				dumfigR~>l = 0.5 * 1e-06
+				dbCopyFig(dumfigL cv list(0 : cw + 1.36 "R0"))
+				dbCopyFig(dumfigR cv list(0 : cw + 1.36 "R0"))
+			)
+		)
+	
+	;--------------------------------------;
+	;Routing ------------------------------；
+	;Gate
+		
+		;----------------------------------------------------;
+		;Gate Rect.POLY & CONT ------------------------------；
+		ti = ep
+		case(type
+			("ABBA"
+				ti = car(ti) + 0.54 + cl : cadr(ti)
+				for(x 0 length(sel) / 4 - 2
+					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 0.345)
+					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 1.36 - 0.345)
+					ti = car(ti) + 1.08 + 2 * cl : cadr(ti)
+				)
+			)
+			(t
+				for(x 0 length(sel) / 4 - 1
+					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 0.345)
+					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 1.36 - 0.345)
+					ti = car(ti) + 1.08 + 2 * cl : cadr(ti)
+				)
+			)
+		)
+		cont_cols = fix2(1 + 2 * cl / 0.47)
+		foreach(x cont_xy_list
+			dbCreateRect(cv list("POLY" "drawing") list(
+				car(x) - 0.27 - cl : cadr(x) - 0.21
+				car(x) - 0.27 : cadr(x) + 0.21
+			))
+			dbCreateRect(cv list("POLY" "drawing") list(
+				car(x) + 0.27 : cadr(x) - 0.21
+				car(x) + 0.27 + cl : cadr(x) + 0.21
+			))
+			dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
+				list("cutRows" 1)
+				list("cutColumns" cont_cols)
+				list("cutSpacing" 0.25 : 0.25)
+				list("layer2Enc" 0.06 : 0.005)
+			))
+		)
+		
+		;End Gate Rect.POLY & CONT if "ABBA"
+		if(type == "ABBA" then
+			end_gate_xy_list = list(
+				car(ep) + cl / 2 : cadr(ep) + cw + 0.345			;LeftLower
+				car(ep) + cl / 2 : cadr(ep) + cw + 1.36 - 0.345		;LeftUpper
+				car(ti) + cl / 2 : cadr(ti) + cw + 0.345			;RightLower
+				car(ti) + cl / 2 : cadr(ti) + cw + 1.36 - 0.345		;RightUpper
+			)
+			foreach(x end_gate_xy_list
+				dbCreateRect(cv list("POLY" "drawing") list(
+					car(x) - cl / 2 : cadr(x) - 0.21
+					car(x) + cl / 2 : cadr(x) + 0.21
+				))
+			)
+			cond(
+				(cl < 0.54
+					end_cont_xy_list = list(
+						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.27 : cadr(nth(0 end_gate_xy_list))
+						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.27 : cadr(nth(1 end_gate_xy_list))
+						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.27 : cadr(nth(2 end_gate_xy_list))
+						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.27 : cadr(nth(3 end_gate_xy_list))
+					)
+					end_cont_cols = 1
+				)
+				(0.66 < cl && cl < 1.01
+					end_cont_xy_list = list(
+						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.505 : cadr(nth(0 end_gate_xy_list))
+						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.505 : cadr(nth(1 end_gate_xy_list))
+						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.505 : cadr(nth(2 end_gate_xy_list))
+						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.505 : cadr(nth(3 end_gate_xy_list))
+					)
+					end_cont_cols = 2
+				)
+				(t
+					end_cont_xy_list = end_gate_xy_list
+					end_cont_cols = fix2((cl - 0.07) / 0.47)
+				)
+			)
+			foreach(x end_cont_xy_list
+				dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
+					list("cutRows" 1)
+					list("cutColumns" end_cont_cols)
+					list("cutSpacing" 0.25 : 0.25)
+					list("layer2Enc" 0.06 : 0.005)
+				))
+			)
+			
+		)
+		;Gate Rect.POLY & CONT Done
+		
+		;----------------------------------------------------;
+		;Gate Rect.MET1 & VIA1 ------------------------------；
+		for(x 0 length(cont_xy_list) / 2 - 1
+			via_xy_list = append1(via_xy_list car(nth(2 * x cont_xy_list)) : cadr(nth(2 * x cont_xy_list)) + 0.025)
+			via_xy_list = append1(via_xy_list car(nth(2 * x + 1 cont_xy_list)) : cadr(nth(2 * x + 1 cont_xy_list)) - 0.025)			
+		)
+		foreach(x via_xy_list
+			dbCreateRect(cv list("MET1" "drawing") list(
+				car(x) + 0.065 - 0.235 * cont_cols : cadr(x) - 0.14
+				car(x) - 0.065 + 0.235 * cont_cols : cadr(x) + 0.14
+			))
+			dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") x "R0" list(
+				list("cutRows" 1)
+				list("cutColumns" fix2((2 * cl + 0.38) / 0.52))
+				list("cutSpacing" 0.26 : 0.26)
+				list("layer1Enc" 0.06 : 0.01)
+				list("layer2Enc" 0.06 : 0.01)
+			))
+		)
+		
+		;End Gate Rect.MET1 & VIA1 if "ABBA"
+		if(type == "ABBA" then
+			cond(
+				(cl < 0.66
+					end_via_xy_list = list(
+						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.34 : cadr(nth(0 end_gate_xy_list)) + 0.025
+						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.34 : cadr(nth(1 end_gate_xy_list)) - 0.025
+						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.34 : cadr(nth(2 end_gate_xy_list)) + 0.025
+						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.34 : cadr(nth(3 end_gate_xy_list)) - 0.025
+					)
+					end_via_cols = 1
+				)
+				(0.66 <= cl && cl < 1.2
+					end_via_xy_list = list(
+						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.60 : cadr(nth(0 end_gate_xy_list)) + 0.025
+						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.60 : cadr(nth(1 end_gate_xy_list)) - 0.025
+						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.60 : cadr(nth(2 end_gate_xy_list)) + 0.025
+						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.60 : cadr(nth(3 end_gate_xy_list)) - 0.025
+					)
+					end_via_cols = 2
+				)
+				(t
+					end_via_xy_list = list(
+						car(nth(0 end_gate_xy_list)) : cadr(nth(0 end_gate_xy_list)) + 0.025
+						car(nth(1 end_gate_xy_list)) : cadr(nth(1 end_gate_xy_list)) - 0.025
+						car(nth(2 end_gate_xy_list)) : cadr(nth(2 end_gate_xy_list)) + 0.025
+						car(nth(3 end_gate_xy_list)) : cadr(nth(3 end_gate_xy_list)) - 0.025
+					)
+					end_via_cols = fix2((cl + 0.26) / 0.52)
+				)
+			)
+			for(x 0 length(end_cont_xy_list) - 1
+				dbCreateRect(cv list("MET1" "drawing") list(
+					car(nth(x end_cont_xy_list)) + 0.065 - 0.235 * end_cont_cols : cadr(nth(x end_via_xy_list)) - 0.14
+					car(nth(x end_cont_xy_list)) - 0.065 + 0.235 * end_cont_cols : cadr(nth(x end_via_xy_list)) + 0.14
+				))
+				dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") nth(x end_via_xy_list) "R0" list(
+					list("cutRows" 1)
+					list("cutColumns" end_via_cols)
+					list("cutSpacing" 0.26 : 0.26)
+					list("layer1Enc" 0.06 : 0.01)
+					list("layer2Enc" 0.06 : 0.01)
+				))
+			)
+		)
+		;Gate Rect.MET1 & VIA1 Done
+		
+		;----------------------------------------------------;
+		;Gate Path.MET1 & MET2 ------------------------------；
+		cond(
+			(type == "ABBA" || type == "AABBAABB"
+				for(x 0 length(via_xy_list) / 2 - 2
+					dbCreatePath(cv list("MET1" "drawing") list(
+						nth(2 * x + 0 via_xy_list)
+						centerBox(list(nth(2 * x + 0 via_xy_list) nth(2 * x + 2 via_xy_list)))
+						centerBox(list(nth(2 * x + 1 via_xy_list) nth(2 * x + 3 via_xy_list)))
+						nth(2 * x + 3 via_xy_list)
+					) 0.28)
+					dbCreatePath(cv list("MET2" "drawing") list(
+						nth(2 * x + 1 via_xy_list)
+						centerBox(list(nth(2 * x + 1 via_xy_list) nth(2 * x + 3 via_xy_list)))
+						centerBox(list(nth(2 * x + 0 via_xy_list) nth(2 * x + 2 via_xy_list)))
+						nth(2 * x + 2 via_xy_list)
+					) 0.28)
+				)
+			)
+			(type == "AABBBBAA"
+				for(x 0 length(via_xy_list) / 4 - 1
+					dbCreatePath(cv list("MET1" "drawing") list(
+						nth(4 * x + 0 via_xy_list)
+						centerBox(list(nth(4 * x + 0 via_xy_list) nth(4 * x + 2 via_xy_list)))
+						centerBox(list(nth(4 * x + 1 via_xy_list) nth(4 * x + 3 via_xy_list)))
+						nth(4 * x + 3 via_xy_list)
+					) 0.28)
+					dbCreatePath(cv list("MET2" "drawing") list(
+						nth(4 * x + 1 via_xy_list)
+						centerBox(list(nth(4 * x + 1 via_xy_list) nth(4 * x + 3 via_xy_list)))
+						centerBox(list(nth(4 * x + 0 via_xy_list) nth(4 * x + 2 via_xy_list)))
+						nth(4 * x + 2 via_xy_list)
+					) 0.28)
+				)
+				for(x 0 length(via_xy_list) / 4 - 2
+					dbCreatePath(cv list("MET2" "drawing") list(
+						nth(4 * x + 2 via_xy_list)
+						nth(4 * x + 4 via_xy_list)
+					) 0.28)
+					dbCreatePath(cv list("MET2" "drawing") list(
+						nth(4 * x + 3 via_xy_list)
+						nth(4 * x + 5 via_xy_list)
+					) 0.28)
+				)
+			)
+		)
+		;End Gate Path.MET1 & MET2
+		if(type == "ABBA" then
+			dbCreatePath(cv list("MET1" "drawing") list(
+				nth(0 end_via_xy_list)
+				car(nth(0 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(0 end_gate_xy_list)) + 0.025
+				car(nth(1 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(1 end_gate_xy_list)) - 0.025
+				nth(1 via_xy_list)
+			) 0.28)
+			dbCreatePath(cv list("MET2" "drawing") list(
+				nth(1 end_via_xy_list)
+				car(nth(1 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(1 end_gate_xy_list)) - 0.025
+				car(nth(0 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(0 end_gate_xy_list)) + 0.025
+				nth(0 via_xy_list)
+			) 0.28)
+			dbCreatePath(cv list("MET1" "drawing") list(
+				nth(length(via_xy_list) - 2 via_xy_list)
+				car(nth(2 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(2 end_gate_xy_list)) + 0.025
+				car(nth(3 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(3 end_gate_xy_list)) - 0.025
+				nth(3 end_via_xy_list)
+			) 0.28)
+			dbCreatePath(cv list("MET2" "drawing") list(
+				nth(length(via_xy_list) - 1 via_xy_list)
+				car(nth(3 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(3 end_gate_xy_list)) - 0.025
+				car(nth(2 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(2 end_gate_xy_list)) + 0.025
+				nth(2 end_via_xy_list)
+			) 0.28)
+		)
+		;Gate Path.MET1 & MET2 Done
+	;Gate Done
+		
+		;-----------------------------------------;
+		;Dummy Gate ------------------------------；
+		dum_cont_xy_list = list(
+			car(dumfigL~>xy) + 0.25 : cadr(dumfigL~>xy) + 0.345 + cw
+			car(dumfigL~>xy) + 0.25 : cadr(dumfigL~>xy) + 1.015 + cw
+			car(dumfigR~>xy) + 0.25 : cadr(dumfigL~>xy) + 0.345 + cw
+			car(dumfigR~>xy) + 0.25 : cadr(dumfigL~>xy) + 1.015 + cw
+		)
+		foreach(x dum_cont_xy_list
+			dbCreateRect(cv list("POLY" "drawing") list(
+				car(x) - 0.25 : cadr(x) - 0.21
+				car(x) + 0.25 : cadr(x) + 0.21
+			))
+			dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
+				list("cutRows" 1)
+				list("cutColumns" 1)
+				list("cutSpacing" 0.25 : 0.25)
+				list("layer2Enc" 0.06 : 0.005)
+			))
+		)
+		dum_via_xy_list = list(
+			car(nth(0 dum_cont_xy_list)) : cadr(nth(0 dum_cont_xy_list)) + 0.025
+			car(nth(1 dum_cont_xy_list)) : cadr(nth(1 dum_cont_xy_list)) - 0.025
+			car(nth(2 dum_cont_xy_list)) : cadr(nth(2 dum_cont_xy_list)) + 0.025
+			car(nth(3 dum_cont_xy_list)) : cadr(nth(3 dum_cont_xy_list)) - 0.025
+		)
+		foreach(x dum_via_xy_list
+			dbCreateRect(cv list("MET1" "drawing") list(
+				car(x) - 0.17 : cadr(x) - 0.14
+				car(x) + 0.17 : cadr(x) + 0.14
+			))
+		)
+		foreach(x list(
+			list(nth(0 dum_via_xy_list) nth(2 dum_via_xy_list))
+			list(nth(1 dum_via_xy_list) nth(3 dum_via_xy_list))
+			)
+			dbCreatePath(cv list("MET1" "drawing") list(
+				car(x)
+				caar(x) - 0.73 : cadar(x)
+			) 0.28)
+			dbCreatePath(cv list("MET1" "drawing") list(
+				cadr(x)
+				caadr(x) + 0.73 : cadadr(x)
+			) 0.28)
+		)
+		foreach(x list(
+				list(
+					car(nth(0 dum_via_xy_list)) - 0.73 : cadr(nth(0 dum_via_xy_list)) - 0.37
+					car(nth(0 dum_via_xy_list)) - 0.31 : cadr(nth(0 dum_via_xy_list))
+				)
+				list(
+					car(nth(1 dum_via_xy_list)) - 0.73 : cadr(nth(1 dum_via_xy_list)) + 0.37
+					car(nth(1 dum_via_xy_list)) - 0.31 : cadr(nth(1 dum_via_xy_list))
+				)
+				list(
+					car(nth(2 dum_via_xy_list)) + 0.73 : cadr(nth(2 dum_via_xy_list)) - 0.37
+					car(nth(2 dum_via_xy_list)) + 0.31 : cadr(nth(2 dum_via_xy_list))
+				)
+				list(
+					car(nth(3 dum_via_xy_list)) + 0.73 : cadr(nth(3 dum_via_xy_list)) + 0.37
+					car(nth(3 dum_via_xy_list)) + 0.31 : cadr(nth(3 dum_via_xy_list))
+				)
+			)
+			dbCreateRect(cv list("MET1" "drawing") x)
+		)
+		;Dummy Gate Done
+	
+	;IB & OUT
+		;----------------------------------------;
+		;Path.MET2 ------------------------------；
+		SD_via_y_list = list(
+			list(
+				cadr(ep) + cw / 2 - 1.18
+				cadr(ep) + cw / 2
+				cadr(ep) + cw / 2 + 1.18
+			)
+			list(
+				cadr(ep) + cw * 3 / 2 + 1.18 + 1.36
+				cadr(ep) + cw * 3 / 2 + 1.36
+				cadr(ep) + cw * 3 / 2 - 1.18 + 1.36
+			)
+		)
+		foreach(x SD_via_y_list
+			foreach(x x
+				dbCreatePath(cv list("MET2" "drawing") list(
+					car(dumfigL~>xy) - 0.48 : x
+					car(dumfigR~>xy) + 0.98 : x
+				) 0.9)
+			)
+		)
+		;Path.MET2 Done
+		
+		;--------------------------------------;
+		;SD VIA1 ------------------------------；
+		foreach(x SD_via_y_list
+			SD_via_y = x
+			
+			;IB VIA1
+			ti = car(ep)
+			cond(
+				(type == "ABBA"
+					for(x 0 length(sel) / 4 - 1
+						SD_via_list = append1(SD_via_list ti + 0.27 + cl : nth(2 SD_via_y))
+						ti = ti + 1.08 + 2 * cl
+					)
+				)
+				(type == "AABBAABB" || type == "AABBBBAA"
+					for(x 0 length(sel) / 4
+						SD_via_list = append1(SD_via_list ti - 0.27 : nth(2 SD_via_y))
+						ti = ti + 1.08 + 2 * cl
+					)
+				)
+			)
+			;
+			
+			;OUT VIA1
+			ti = car(ep)
+			case(type
+				("ABBA"
+						SD_via_list = append1(SD_via_list ti - 0.54 * 1 / 2 + 0 * cl : car(SD_via_y))	;L.A
+					for(x 0 length(sel) / 8 - 1
+						SD_via_list = append1(SD_via_list ti + 0.54 * 3 / 2 + 2 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + 0.54 * 7 / 2 + 4 * cl : car(SD_via_y))	;AA R.A
+						ti = ti + 4 * (0.54 + cl)
+					)
+				)
+				("AABBAABB"
+					for(x 0 length(sel) / 8 - 1
+						SD_via_list = append1(SD_via_list ti + 0.54 * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
+						SD_via_list = append1(SD_via_list ti + 0.54 * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
+						ti = ti + 4 * (0.54 + cl)
+					)
+				)
+				("AABBBBAA"
+					for(x 0 length(sel) / 16 - 1
+						SD_via_list = append1(SD_via_list ti + 0.54 * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
+						SD_via_list = append1(SD_via_list ti + 0.54 * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + 0.54 * 9 / 2 + 5 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + 0.54 * 13 / 2 + 7 * cl : car(SD_via_y))	;AA
+						ti = ti + 4.32 + 8 * cl
+					)
+				)
+			)
+			;
+			foreach(x
+				append(SD_via_list
+					list(
+						car(dumfigL~>xy) - 0.27 : nth(2 SD_via_y)
+						car(dumfigR~>xy) + 0.77 : nth(2 SD_via_y)
+					)
+				)
+				dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") x "R0" list(
+					list("cutRows" 2)
+					list("cutSpacing" 0.26 : 0.26)
+				))
+			)
+		)
+		;SD VIA1 Done
+	;IB & OUT Done
+	)
+)
+
+unless(getd('Tips)
+	procedure(Tips(banner text)
+		prog((Tips_Form)
+			hiDisplayAppDBox(
+				?name 'Tips_Form
+				?dboxBanner banner
+				?buttonLayout 'Close
+				?dboxText text
+			)
+		)
+	)
+)
