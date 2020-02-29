@@ -1,5 +1,5 @@
 # Skill/custom
 
-### CommonCenterMos
+## CommonCenterMos
 
-- 基于Skill，共质心差分对布局布线。
+* 基于Skill，共质心差分对布局布线。
