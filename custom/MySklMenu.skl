@@ -1,48 +1,73 @@
-procedure(MyMenu(info)
+hiSetBindKey("Layout" "<Key>T" "MyWindowMenu()")
+
+procedure(MyMenuList()
 	prog(()
-		hiCreatePulldownMenu('TestMenu "TestMenu"
-			list(
-				hiCreateMenuItem(
-					?name 'A
-					?itemText "A"
-					?callback "println(\"A\")"
+		return(list(
+			"CommonCenterMos"
+		))
+	)
+)
+
+procedure(MyWindowMenu()
+	prog((menulist MySklMenu_Form)
+		menulist = MyMenuList()
+		hiCreateAppForm(
+			?name 'MySklMenu_Form
+			?fields list(
+				hiCreateComboField(
+					?name 'menu
+					?prompt "Function"
+					?items menulist
+					?value car(menulist)
 				)
-				hiCreateMenuItem(
-					?name 'B
-					?itemText "B"
-					?callback "println(\"B\")"
+				hiCreateRadioField(
+					?name 'postfix
+					?prompt "Add UI()"
+					?choices list("yes" "no")
+					?value "yes"
 				)
+			)
+			?formTitle "Load"
+			?buttonLayout 'OKCancel
+		)
+		unless(hiDisplayForm('MySklMenu_Form)
+			println("Cancel Run")
+			return(nil)
+		)
+		if(MySklMenu_Form~>postfix~>value == "yes" then
+			evalstring(strcat(MySklMenu_Form~>menu~>value "UI()"))
+			else
+				evalstring(MySklMenu_Form~>menu~>value)
+		)
+	)
+)
+
+procedure(MyPulldownMenu(info)
+	prog((itemlist)
+		foreach(x MyMenuList()
+			itemlist = append1(itemlist 
 				hiCreateMenuItem(
-					?name 'C
-					?itemText "C"
-					?callback "println(\"C\")"
+					?name stringToSymbol(x)
+					?itemText x
+					?callback strcat(x "UI()")
 				)
 			)
 		)
-		return(list('TestMenu))
+		hiCreatePulldownMenu('MySkl "MySkl" itemlist)
+		return(list('MySkl))
 	)
 )
-deRegUserTriggers("maskLayout" nil 'MyMenu)
+deRegUserTriggers("maskLayout" nil 'MyPulldownMenu)
 
- 'setToolsMenu
-
-hiCreatePulldownMenu('TestMenu "TestMenu"
-	list(
-		hiCreateMenuItem(
-			?name 'A
-			?itemText "A"
-			?callback "println(\"A\")"
-		)
-		hiCreateMenuItem(
-			?name 'B
-			?itemText "B"
-			?callback "println(\"B\")"
-		)
-		hiCreateMenuItem(
-			?name 'C
-			?itemText "C"
-			?callback "println(\"C\")"
+unless(getd('Tips)
+	procedure(Tips(banner text)
+		prog((Tips_Form)
+			hiDisplayAppDBox(
+				?name 'Tips_Form
+				?dboxBanner banner
+				?buttonLayout 'Close
+				?dboxText text
+			)
 		)
 	)
 )
-deRegUserTriggers("maskLayout" nil 'TestMenu 'setToolsMenu)
