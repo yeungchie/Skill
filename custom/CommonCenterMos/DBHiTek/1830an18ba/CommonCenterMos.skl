@@ -46,9 +46,10 @@ procedure(CommonCenterMosUI()
 )
 
 procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
-	prog((	cv tech ep sel ti cw cl tia sela												;ti is temp info
+	prog((
+			cv tech ep sel ti cw cl tia sela												;ti is temp info
 			
-			ep_list size index sort dumfigL dumfigR															;define at Place
+			ep_list size index sort dumfigL dumfigR											;define at Place
 			
 			cont_xy_list cont_cols via_xy_list												;gate cont & via
 			end_gate_xy_list end_cont_xy_list end_cont_cols end_via_xy_list end_via_cols	;end gate cont & via
@@ -56,12 +57,48 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 			SD_via_y_list SD_via_y SD_via_list												;all source & drain
 			
 			;Rules
-			)
+			hs_finger
+			vs_channel
+			cminl
+			w_cont
+			s_cont
+			w_via
+			s_via
+			enc_cont_poly
+			enc_cont_m1
+			enc_via_m1
+			enc_via_m2
+			w_gatem
+			s_m1
+			s_m2
+			w_sdm1
+			w_sdm2
+			
+			vs_cont_channel
+			voffset_via
+		)
 		
 		/**//******************************/
-		/**/;Rules
-		/**/
-		/**/
+		;Rules
+		hs_finger = 0.54																	;finger横向间距
+		vs_channel = 1.36																	;channel纵向间距
+		cminl = 0.5																			;channel最小长度(dummy的取值)
+		w_cont = 0.22																		;contact宽度
+		s_cont = 0.25																		;contact间距
+		w_via = 0.26																		;via宽度
+		s_via = 0.26																		;via间距
+		enc_cont_poly = 0.1																	;poly包围contact的距离(头尾 最小)
+		enc_cont_m1 = list(0.06 0.005)														;metal1包围contact的距离(头尾 最小)
+		enc_via_m1 = list(0.06 0.01)														;metal1包围via的距离(头尾 最小)
+		enc_via_m2 = list(0.06 0.01)														;metal2包围via的距离(头尾 最小)
+		w_gatem = 0.28																		;gate metal的宽度
+		s_m1 = 0.23																			;metal1的间距
+		s_m2 = 0.28																			;metal2的间距
+		w_sdm1 = 0.42																		;source & drain metal1的宽度
+		w_sdm2 = 0.9																		;source & drain metal2的宽度
+		
+		vs_cont_channel = s_m1 + cadr(enc_cont_m1)											;gate_contact与channel的纵向间距
+		voffset_via = (w_via / 2 + cadr(enc_via_m1)) - (w_cont / 2 + cadr(enc_cont_m1))		;via中心相对于contact中心的纵向offset
 		/**//******************************/
 		
 		cv = geGetEditRep()
@@ -160,15 +197,15 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 				ti = ep
 				ep_list = list(ti)
 				for(x 0 length(sel) / 2 - 2
-					ti = car(ti) + 0.54 + cl : cadr(ti)
+					ti = car(ti) + hs_finger + cl : cadr(ti)
 					ep_list = append1(ep_list ti)
 					
 				)
 				;Row 2
-				ti = car(ep) : cadr(ep) + 1.36 + cw
+				ti = car(ep) : cadr(ep) + vs_channel + cw
 				ep_list = append1(ep_list ti)
 				for(x 0 length(sel) / 2 - 2
-					ti = car(ti) + 0.54 + cl : cadr(ti)
+					ti = car(ti) + hs_finger + cl : cadr(ti)
 					ep_list = append1(ep_list ti)
 					
 				)
@@ -196,52 +233,52 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 				case(type
 					("ABBA"
 						for(x 0 length(sel) / 8 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 1) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 2) : cadr(ep) + cw + vs_channel)
 						)
 						for(x 0 length(sel) / 8 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 0) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 3) : cadr(ep) + cw + vs_channel)
 						)
 					)
 					("AABBAABB"
 						for(x 0 length(sel) / 8 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 2) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 3) : cadr(ep) + cw + vs_channel)
 						)
 						for(x 0 length(sel) / 8 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 2) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 3) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 0) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (4 * x + 1) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 0) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (4 * x + 1) : cadr(ep) + cw + vs_channel)
 						)
 					)
 					("AABBBBAA"
 						for(x 0 length(sel) / 16 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 0) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 1) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 6) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 7) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 2) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 3) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 4) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 5) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 0) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 1) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 6) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 7) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 2) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 3) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 4) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 5) : cadr(ep) + cw + vs_channel)
 						)
 						for(x 0 length(sel) / 16 - 1
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 2) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 3) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 4) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 5) : cadr(ep))
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 0) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 1) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 6) : cadr(ep) + cw + 1.36)
-							ep_list = append1(ep_list car(ep) + (cl + 0.54) * (8 * x + 7) : cadr(ep) + cw + 1.36)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 2) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 3) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 4) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 5) : cadr(ep))
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 0) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 1) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 6) : cadr(ep) + cw + vs_channel)
+							ep_list = append1(ep_list car(ep) + (cl + hs_finger) * (8 * x + 7) : cadr(ep) + cw + vs_channel)
 						)
 					)
 				)
@@ -258,12 +295,12 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		;Dummy ------------------------------；
 		foreach(x sel
 			if(x~>xy == ep then
-				dumfigL = dbCopyFig(x cv list(-(0.54 + 0.5) : 0 "R0"))
-				dumfigR = dbCopyFig(x cv list(length(sel) * (cl + 0.54) / 2 : 0 "R0"))
-				dumfigL~>l = 0.5 * 1e-06
-				dumfigR~>l = 0.5 * 1e-06
-				dbCopyFig(dumfigL cv list(0 : cw + 1.36 "R0"))
-				dbCopyFig(dumfigR cv list(0 : cw + 1.36 "R0"))
+				dumfigL = dbCopyFig(x cv list(-(hs_finger + cminl) : 0 "R0"))
+				dumfigR = dbCopyFig(x cv list(length(sel) * (cl + hs_finger) / 2 : 0 "R0"))
+				dumfigL~>l = cminl * 1e-06
+				dumfigR~>l = cminl * 1e-06
+				dbCopyFig(dumfigL cv list(0 : cw + vs_channel "R0"))
+				dbCopyFig(dumfigR cv list(0 : cw + vs_channel "R0"))
 			)
 		)
 	
@@ -276,83 +313,85 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		ti = ep
 		case(type
 			("ABBA"
-				ti = car(ti) + 0.54 + cl : cadr(ti)
+				ti = car(ti) + hs_finger + cl : cadr(ti)
 				for(x 0 length(sel) / 4 - 2
-					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 0.345)
-					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 1.36 - 0.345)
-					ti = car(ti) + 1.08 + 2 * cl : cadr(ti)
+					cont_xy_list = append1(cont_xy_list car(ti) + hs_finger / 2 + cl : cadr(ti) + cw + vs_cont_channel + w_cont / 2)
+					cont_xy_list = append1(cont_xy_list car(ti) + hs_finger / 2 + cl : cadr(ti) + cw + vs_channel - (vs_cont_channel + w_cont / 2))
+					ti = car(ti) + (hs_finger + cl) * 2 : cadr(ti)
 				)
 			)
 			(t
 				for(x 0 length(sel) / 4 - 1
-					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 0.345)
-					cont_xy_list = append1(cont_xy_list car(ti) + 0.27 + cl : cadr(ti) + cw + 1.36 - 0.345)
-					ti = car(ti) + 1.08 + 2 * cl : cadr(ti)
+					cont_xy_list = append1(cont_xy_list car(ti) + hs_finger / 2 + cl : cadr(ti) + cw + vs_cont_channel + w_cont / 2)
+					cont_xy_list = append1(cont_xy_list car(ti) + hs_finger / 2 + cl : cadr(ti) + cw + vs_channel - (vs_cont_channel + w_cont / 2))
+					ti = car(ti) + (hs_finger + cl) * 2 : cadr(ti)
 				)
 			)
 		)
-		cont_cols = fix2(1 + 2 * cl / 0.47)
+		cont_cols = fix2((2 * cl + hs_finger + s_cont - 2 * (car(enc_cont_m1) + s_m1 + w_gatem / 2 - hs_finger / 2)) / (w_cont + s_cont))
 		foreach(x cont_xy_list
 			dbCreateRect(cv list("POLY" "drawing") list(
-				car(x) - 0.27 - cl : cadr(x) - 0.21
-				car(x) - 0.27 : cadr(x) + 0.21
+				car(x) - hs_finger / 2 - cl : cadr(x) - (enc_cont_poly * 2 + w_cont) / 2
+				car(x) - hs_finger / 2 : cadr(x) + (enc_cont_poly * 2 + w_cont) / 2
 			))
 			dbCreateRect(cv list("POLY" "drawing") list(
-				car(x) + 0.27 : cadr(x) - 0.21
-				car(x) + 0.27 + cl : cadr(x) + 0.21
+				car(x) + hs_finger / 2 : cadr(x) - (enc_cont_poly * 2 + w_cont) / 2
+				car(x) + hs_finger / 2 + cl : cadr(x) + (enc_cont_poly * 2 + w_cont) / 2
 			))
 			dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
 				list("cutRows" 1)
 				list("cutColumns" cont_cols)
-				list("cutSpacing" 0.25 : 0.25)
-				list("layer2Enc" 0.06 : 0.005)
+				list("cutSpacing" s_cont : s_cont)
+				list("layer2Enc" enc_cont_m1)
 			))
 		)
 		
 		;End Gate Rect.POLY & CONT if "ABBA"
 		if(type == "ABBA" then
 			end_gate_xy_list = list(
-				car(ep) + cl / 2 : cadr(ep) + cw + 0.345			;LeftLower
-				car(ep) + cl / 2 : cadr(ep) + cw + 1.36 - 0.345		;LeftUpper
-				car(ti) + cl / 2 : cadr(ti) + cw + 0.345			;RightLower
-				car(ti) + cl / 2 : cadr(ti) + cw + 1.36 - 0.345		;RightUpper
+				car(ep) + cl / 2 : cadr(ep) + cw + vs_cont_channel + w_cont / 2						;LeftLower
+				car(ep) + cl / 2 : cadr(ep) + cw + vs_channel - (vs_cont_channel + w_cont / 2)		;LeftUpper
+				car(ti) + cl / 2 : cadr(ti) + cw + vs_cont_channel + w_cont / 2						;RightLower
+				car(ti) + cl / 2 : cadr(ti) + cw + vs_channel - (vs_cont_channel + w_cont / 2)		;RightUpper
 			)
 			foreach(x end_gate_xy_list
 				dbCreateRect(cv list("POLY" "drawing") list(
-					car(x) - cl / 2 : cadr(x) - 0.21
-					car(x) + cl / 2 : cadr(x) + 0.21
+					car(x) - cl / 2 : cadr(x) - (enc_cont_poly * 2 + w_cont) / 2
+					car(x) + cl / 2 : cadr(x) + (enc_cont_poly * 2 + w_cont) / 2
 				))
 			)
 			cond(
-				(cl < 0.54
+				(cl < 0.54			;
+					ti = s_m1 - (hs_finger / 2 - w_gatem / 2) + car(enc_cont_m1) + w_cont / 2		;计算出contact中心相对于finger靠近整体中心的边缘的横向offset
 					end_cont_xy_list = list(
-						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.27 : cadr(nth(0 end_gate_xy_list))
-						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.27 : cadr(nth(1 end_gate_xy_list))
-						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.27 : cadr(nth(2 end_gate_xy_list))
-						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.27 : cadr(nth(3 end_gate_xy_list))
+						car(nth(0 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(0 end_gate_xy_list))
+						car(nth(1 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(1 end_gate_xy_list))
+						car(nth(2 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(2 end_gate_xy_list))
+						car(nth(3 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(3 end_gate_xy_list))
 					)
 					end_cont_cols = 1
 				)
-				(0.66 < cl && cl < 1.01
+				(0.66 < cl && cl < 1.01			;
+					ti = s_m1 - (hs_finger / 2 - w_gatem / 2) + car(enc_cont_m1) + w_cont + s_cont / 2
 					end_cont_xy_list = list(
-						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.505 : cadr(nth(0 end_gate_xy_list))
-						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.505 : cadr(nth(1 end_gate_xy_list))
-						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.505 : cadr(nth(2 end_gate_xy_list))
-						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.505 : cadr(nth(3 end_gate_xy_list))
+						car(nth(0 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(0 end_gate_xy_list))
+						car(nth(1 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(1 end_gate_xy_list))
+						car(nth(2 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(2 end_gate_xy_list))
+						car(nth(3 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(3 end_gate_xy_list))
 					)
 					end_cont_cols = 2
 				)
 				(t
 					end_cont_xy_list = end_gate_xy_list
-					end_cont_cols = fix2((cl - 0.07) / 0.47)
+					end_cont_cols = fix2((cl - 2 * (s_m1 - (hs_finger / 2 - w_gatem / 2) - (enc_cont_poly - car(enc_cont_m1))) + s_cont - 2 * enc_cont_poly) / (w_cont + s_cont))
 				)
 			)
 			foreach(x end_cont_xy_list
 				dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
 					list("cutRows" 1)
 					list("cutColumns" end_cont_cols)
-					list("cutSpacing" 0.25 : 0.25)
-					list("layer2Enc" 0.06 : 0.005)
+					list("cutSpacing" s_cont : s_cont)
+					list("layer2Enc" enc_cont_m1)
 				))
 			)
 			
@@ -362,65 +401,67 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		;----------------------------------------------------;
 		;Gate Rect.MET1 & VIA1 ------------------------------；
 		for(x 0 length(cont_xy_list) / 2 - 1
-			via_xy_list = append1(via_xy_list car(nth(2 * x cont_xy_list)) : cadr(nth(2 * x cont_xy_list)) + 0.025)
-			via_xy_list = append1(via_xy_list car(nth(2 * x + 1 cont_xy_list)) : cadr(nth(2 * x + 1 cont_xy_list)) - 0.025)			
+			via_xy_list = append1(via_xy_list car(nth(2 * x 	cont_xy_list)) : cadr(nth(2 * x 	cont_xy_list)) + voffset_via)
+			via_xy_list = append1(via_xy_list car(nth(2 * x + 1 cont_xy_list)) : cadr(nth(2 * x + 1 cont_xy_list)) - voffset_via)			
 		)
 		foreach(x via_xy_list
 			dbCreateRect(cv list("MET1" "drawing") list(
-				car(x) + 0.065 - 0.235 * cont_cols : cadr(x) - 0.14
-				car(x) - 0.065 + 0.235 * cont_cols : cadr(x) + 0.14
+				car(x) - (cont_cols * (w_cont + s_cont) - s_cont + 2 * car(enc_cont_m1)) / 2 : cadr(x) - w_gatem / 2
+				car(x) + (cont_cols * (w_cont + s_cont) - s_cont + 2 * car(enc_cont_m1)) / 2 : cadr(x) + w_gatem / 2
 			))
 			dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") x "R0" list(
 				list("cutRows" 1)
-				list("cutColumns" fix2((2 * cl + 0.38) / 0.52))
-				list("cutSpacing" 0.26 : 0.26)
-				list("layer1Enc" 0.06 : 0.01)
-				list("layer2Enc" 0.06 : 0.01)
+				list("cutColumns" fix2((2 * cl + hs_finger - 2 * (s_m2 - (hs_finger / 2 - w_gatem / 2)) + s_via - 2 * car(enc_via_m2)) / (w_via + s_via)))
+				list("cutSpacing" s_via : s_via)
+				list("layer1Enc" enc_via_m1)
+				list("layer2Enc" enc_via_m2)
 			))
 		)
 		
 		;End Gate Rect.MET1 & VIA1 if "ABBA"
 		if(type == "ABBA" then
 			cond(
-				(cl < 0.66
+				(cl < 0.66			;
+					ti = s_m2 - (hs_finger / 2 - w_gatem / 2) + car(enc_via_m2) + w_via / 2		;计算出via中心相对于finger靠近整体中心的边缘的横向offset
 					end_via_xy_list = list(
-						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.34 : cadr(nth(0 end_gate_xy_list)) + 0.025
-						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.34 : cadr(nth(1 end_gate_xy_list)) - 0.025
-						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.34 : cadr(nth(2 end_gate_xy_list)) + 0.025
-						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.34 : cadr(nth(3 end_gate_xy_list)) - 0.025
+						car(nth(0 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(0 end_gate_xy_list)) + voffset_via
+						car(nth(1 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(1 end_gate_xy_list)) - voffset_via
+						car(nth(2 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(2 end_gate_xy_list)) + voffset_via
+						car(nth(3 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(3 end_gate_xy_list)) - voffset_via
 					)
 					end_via_cols = 1
 				)
-				(0.66 <= cl && cl < 1.2
+				(0.66 <= cl && cl < 1.2			;
+					ti = s_m2 - (hs_finger / 2 - w_gatem / 2) + car(enc_via_m2) + w_via + s_via / 2
 					end_via_xy_list = list(
-						car(nth(0 end_gate_xy_list)) + cl / 2 - 0.60 : cadr(nth(0 end_gate_xy_list)) + 0.025
-						car(nth(1 end_gate_xy_list)) + cl / 2 - 0.60 : cadr(nth(1 end_gate_xy_list)) - 0.025
-						car(nth(2 end_gate_xy_list)) - cl / 2 + 0.60 : cadr(nth(2 end_gate_xy_list)) + 0.025
-						car(nth(3 end_gate_xy_list)) - cl / 2 + 0.60 : cadr(nth(3 end_gate_xy_list)) - 0.025
+						car(nth(0 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(0 end_gate_xy_list)) + voffset_via
+						car(nth(1 end_gate_xy_list)) + cl / 2 - ti : cadr(nth(1 end_gate_xy_list)) - voffset_via
+						car(nth(2 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(2 end_gate_xy_list)) + voffset_via
+						car(nth(3 end_gate_xy_list)) - cl / 2 + ti : cadr(nth(3 end_gate_xy_list)) - voffset_via
 					)
 					end_via_cols = 2
 				)
 				(t
 					end_via_xy_list = list(
-						car(nth(0 end_gate_xy_list)) : cadr(nth(0 end_gate_xy_list)) + 0.025
-						car(nth(1 end_gate_xy_list)) : cadr(nth(1 end_gate_xy_list)) - 0.025
-						car(nth(2 end_gate_xy_list)) : cadr(nth(2 end_gate_xy_list)) + 0.025
-						car(nth(3 end_gate_xy_list)) : cadr(nth(3 end_gate_xy_list)) - 0.025
+						car(nth(0 end_gate_xy_list)) : cadr(nth(0 end_gate_xy_list)) + voffset_via
+						car(nth(1 end_gate_xy_list)) : cadr(nth(1 end_gate_xy_list)) - voffset_via
+						car(nth(2 end_gate_xy_list)) : cadr(nth(2 end_gate_xy_list)) + voffset_via
+						car(nth(3 end_gate_xy_list)) : cadr(nth(3 end_gate_xy_list)) - voffset_via
 					)
-					end_via_cols = fix2((cl + 0.26) / 0.52)
+					end_via_cols = fix2((cl - 2 * (s_m2 - (hs_finger / 2 - w_gatem / 2)) + s_via - 2 * car(enc_via_m2)) / (w_via + s_via))
 				)
 			)
 			for(x 0 length(end_cont_xy_list) - 1
 				dbCreateRect(cv list("MET1" "drawing") list(
-					car(nth(x end_cont_xy_list)) + 0.065 - 0.235 * end_cont_cols : cadr(nth(x end_via_xy_list)) - 0.14
-					car(nth(x end_cont_xy_list)) - 0.065 + 0.235 * end_cont_cols : cadr(nth(x end_via_xy_list)) + 0.14
+					car(nth(x end_cont_xy_list)) - (end_cont_cols * (w_cont + s_cont) - s_cont + 2 * car(enc_cont_m1)) / 2 : cadr(nth(x end_via_xy_list)) - w_gatem / 2
+					car(nth(x end_cont_xy_list)) + (end_cont_cols * (w_cont + s_cont) - s_cont + 2 * car(enc_cont_m1)) / 2 : cadr(nth(x end_via_xy_list)) + w_gatem / 2
 				))
 				dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") nth(x end_via_xy_list) "R0" list(
 					list("cutRows" 1)
 					list("cutColumns" end_via_cols)
-					list("cutSpacing" 0.26 : 0.26)
-					list("layer1Enc" 0.06 : 0.01)
-					list("layer2Enc" 0.06 : 0.01)
+					list("cutSpacing" s_via : s_via)
+					list("layer1Enc" enc_via_m1)
+					list("layer2Enc" enc_via_m2)
 				))
 			)
 		)
@@ -436,13 +477,13 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 						centerBox(list(nth(2 * x + 0 via_xy_list) nth(2 * x + 2 via_xy_list)))
 						centerBox(list(nth(2 * x + 1 via_xy_list) nth(2 * x + 3 via_xy_list)))
 						nth(2 * x + 3 via_xy_list)
-					) 0.28)
+					) w_gatem)
 					dbCreatePath(cv list("MET2" "drawing") list(
 						nth(2 * x + 1 via_xy_list)
 						centerBox(list(nth(2 * x + 1 via_xy_list) nth(2 * x + 3 via_xy_list)))
 						centerBox(list(nth(2 * x + 0 via_xy_list) nth(2 * x + 2 via_xy_list)))
 						nth(2 * x + 2 via_xy_list)
-					) 0.28)
+					) w_gatem)
 				)
 			)
 			(type == "AABBBBAA"
@@ -452,23 +493,23 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 						centerBox(list(nth(4 * x + 0 via_xy_list) nth(4 * x + 2 via_xy_list)))
 						centerBox(list(nth(4 * x + 1 via_xy_list) nth(4 * x + 3 via_xy_list)))
 						nth(4 * x + 3 via_xy_list)
-					) 0.28)
+					) w_gatem)
 					dbCreatePath(cv list("MET2" "drawing") list(
 						nth(4 * x + 1 via_xy_list)
 						centerBox(list(nth(4 * x + 1 via_xy_list) nth(4 * x + 3 via_xy_list)))
 						centerBox(list(nth(4 * x + 0 via_xy_list) nth(4 * x + 2 via_xy_list)))
 						nth(4 * x + 2 via_xy_list)
-					) 0.28)
+					) w_gatem)
 				)
 				for(x 0 length(via_xy_list) / 4 - 2
 					dbCreatePath(cv list("MET2" "drawing") list(
 						nth(4 * x + 2 via_xy_list)
 						nth(4 * x + 4 via_xy_list)
-					) 0.28)
+					) w_gatem)
 					dbCreatePath(cv list("MET2" "drawing") list(
 						nth(4 * x + 3 via_xy_list)
 						nth(4 * x + 5 via_xy_list)
-					) 0.28)
+					) w_gatem)
 				)
 			)
 		)
@@ -476,28 +517,28 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		if(type == "ABBA" then
 			dbCreatePath(cv list("MET1" "drawing") list(
 				nth(0 end_via_xy_list)
-				car(nth(0 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(0 end_gate_xy_list)) + 0.025
-				car(nth(1 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(1 end_gate_xy_list)) - 0.025
+				car(nth(0 end_gate_xy_list)) + cl / 2 + hs_finger / 2 : cadr(nth(0 end_gate_xy_list)) + voffset_via
+				car(nth(1 end_gate_xy_list)) + cl / 2 + hs_finger / 2 : cadr(nth(1 end_gate_xy_list)) - voffset_via
 				nth(1 via_xy_list)
-			) 0.28)
+			) w_gatem)
 			dbCreatePath(cv list("MET2" "drawing") list(
 				nth(1 end_via_xy_list)
-				car(nth(1 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(1 end_gate_xy_list)) - 0.025
-				car(nth(0 end_gate_xy_list)) + cl / 2 + 0.54 / 2 : cadr(nth(0 end_gate_xy_list)) + 0.025
+				car(nth(1 end_gate_xy_list)) + cl / 2 + hs_finger / 2 : cadr(nth(1 end_gate_xy_list)) - voffset_via
+				car(nth(0 end_gate_xy_list)) + cl / 2 + hs_finger / 2 : cadr(nth(0 end_gate_xy_list)) + voffset_via
 				nth(0 via_xy_list)
-			) 0.28)
+			) w_gatem)
 			dbCreatePath(cv list("MET1" "drawing") list(
 				nth(length(via_xy_list) - 2 via_xy_list)
-				car(nth(2 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(2 end_gate_xy_list)) + 0.025
-				car(nth(3 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(3 end_gate_xy_list)) - 0.025
+				car(nth(2 end_gate_xy_list)) - cl / 2 - hs_finger / 2 : cadr(nth(2 end_gate_xy_list)) + voffset_via
+				car(nth(3 end_gate_xy_list)) - cl / 2 - hs_finger / 2 : cadr(nth(3 end_gate_xy_list)) - voffset_via
 				nth(3 end_via_xy_list)
-			) 0.28)
+			) w_gatem)
 			dbCreatePath(cv list("MET2" "drawing") list(
 				nth(length(via_xy_list) - 1 via_xy_list)
-				car(nth(3 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(3 end_gate_xy_list)) - 0.025
-				car(nth(2 end_gate_xy_list)) - cl / 2 - 0.54 / 2 : cadr(nth(2 end_gate_xy_list)) + 0.025
+				car(nth(3 end_gate_xy_list)) - cl / 2 - hs_finger / 2 : cadr(nth(3 end_gate_xy_list)) - voffset_via
+				car(nth(2 end_gate_xy_list)) - cl / 2 - hs_finger / 2 : cadr(nth(2 end_gate_xy_list)) + voffset_via
 				nth(2 end_via_xy_list)
-			) 0.28)
+			) w_gatem)
 		)
 		;Gate Path.MET1 & MET2 Done
 	;Gate Done
@@ -505,33 +546,33 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		;-----------------------------------------;
 		;Dummy Gate ------------------------------；
 		dum_cont_xy_list = list(
-			car(dumfigL~>xy) + 0.25 : cadr(dumfigL~>xy) + 0.345 + cw
-			car(dumfigL~>xy) + 0.25 : cadr(dumfigL~>xy) + 1.015 + cw
-			car(dumfigR~>xy) + 0.25 : cadr(dumfigL~>xy) + 0.345 + cw
-			car(dumfigR~>xy) + 0.25 : cadr(dumfigL~>xy) + 1.015 + cw
+			car(dumfigL~>xy) + cminl / 2 : cadr(dumfigL~>xy) + cw + vs_cont_channel + w_cont / 2
+			car(dumfigL~>xy) + cminl / 2 : cadr(dumfigL~>xy) + cw + vs_channel - (vs_cont_channel + w_cont / 2)
+			car(dumfigR~>xy) + cminl / 2 : cadr(dumfigL~>xy) + cw + vs_cont_channel + w_cont / 2
+			car(dumfigR~>xy) + cminl / 2 : cadr(dumfigL~>xy) + cw + vs_channel - (vs_cont_channel + w_cont / 2)
 		)
 		foreach(x dum_cont_xy_list
 			dbCreateRect(cv list("POLY" "drawing") list(
-				car(x) - 0.25 : cadr(x) - 0.21
-				car(x) + 0.25 : cadr(x) + 0.21
+				car(x) - cminl / 2 : cadr(x) - (enc_cont_poly * 2 + w_cont) / 2
+				car(x) + cminl / 2 : cadr(x) + (enc_cont_poly * 2 + w_cont) / 2
 			))
 			dbCreateVia(cv techFindViaDefByName(tech "M1_POLYc") x "R0" list(
 				list("cutRows" 1)
 				list("cutColumns" 1)
-				list("cutSpacing" 0.25 : 0.25)
-				list("layer2Enc" 0.06 : 0.005)
+				list("cutSpacing" s_cont : s_cont)
+				list("layer2Enc" enc_cont_m1)
 			))
 		)
 		dum_via_xy_list = list(
-			car(nth(0 dum_cont_xy_list)) : cadr(nth(0 dum_cont_xy_list)) + 0.025
-			car(nth(1 dum_cont_xy_list)) : cadr(nth(1 dum_cont_xy_list)) - 0.025
-			car(nth(2 dum_cont_xy_list)) : cadr(nth(2 dum_cont_xy_list)) + 0.025
-			car(nth(3 dum_cont_xy_list)) : cadr(nth(3 dum_cont_xy_list)) - 0.025
+			car(nth(0 dum_cont_xy_list)) : cadr(nth(0 dum_cont_xy_list)) + voffset_via
+			car(nth(1 dum_cont_xy_list)) : cadr(nth(1 dum_cont_xy_list)) - voffset_via
+			car(nth(2 dum_cont_xy_list)) : cadr(nth(2 dum_cont_xy_list)) + voffset_via
+			car(nth(3 dum_cont_xy_list)) : cadr(nth(3 dum_cont_xy_list)) - voffset_via
 		)
 		foreach(x dum_via_xy_list
 			dbCreateRect(cv list("MET1" "drawing") list(
-				car(x) - 0.17 : cadr(x) - 0.14
-				car(x) + 0.17 : cadr(x) + 0.14
+				car(x) - (w_cont / 2 + car(enc_cont_m1)) : cadr(x) - w_gatem / 2
+				car(x) + (w_cont / 2 + car(enc_cont_m1)) : cadr(x) + w_gatem / 2
 			))
 		)
 		foreach(x list(
@@ -540,29 +581,29 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 			)
 			dbCreatePath(cv list("MET1" "drawing") list(
 				car(x)
-				caar(x) - 0.73 : cadar(x)
+				caar(x) - (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadar(x)
 			) 0.28)
 			dbCreatePath(cv list("MET1" "drawing") list(
 				cadr(x)
-				caadr(x) + 0.73 : cadadr(x)
+				caadr(x) + (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadadr(x)
 			) 0.28)
 		)
 		foreach(x list(
 				list(
-					car(nth(0 dum_via_xy_list)) - 0.73 : cadr(nth(0 dum_via_xy_list)) - 0.37
-					car(nth(0 dum_via_xy_list)) - 0.31 : cadr(nth(0 dum_via_xy_list))
+					car(nth(0 dum_via_xy_list)) - (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadr(nth(0 dum_via_xy_list)) - (w_gatem / 2 + s_m1)
+					car(nth(0 dum_via_xy_list)) - (cminl / 2 + hs_finger / 2 - w_sdm1 / 2) : cadr(nth(0 dum_via_xy_list))
 				)
 				list(
-					car(nth(1 dum_via_xy_list)) - 0.73 : cadr(nth(1 dum_via_xy_list)) + 0.37
-					car(nth(1 dum_via_xy_list)) - 0.31 : cadr(nth(1 dum_via_xy_list))
+					car(nth(1 dum_via_xy_list)) - (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadr(nth(1 dum_via_xy_list)) + (w_gatem / 2 + s_m1)
+					car(nth(1 dum_via_xy_list)) - (cminl / 2 + hs_finger / 2 - w_sdm1 / 2) : cadr(nth(1 dum_via_xy_list))
 				)
 				list(
-					car(nth(2 dum_via_xy_list)) + 0.73 : cadr(nth(2 dum_via_xy_list)) - 0.37
-					car(nth(2 dum_via_xy_list)) + 0.31 : cadr(nth(2 dum_via_xy_list))
+					car(nth(2 dum_via_xy_list)) + (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadr(nth(2 dum_via_xy_list)) - (w_gatem / 2 + s_m1)
+					car(nth(2 dum_via_xy_list)) + (cminl / 2 + hs_finger / 2 - w_sdm1 / 2) : cadr(nth(2 dum_via_xy_list))
 				)
 				list(
-					car(nth(3 dum_via_xy_list)) + 0.73 : cadr(nth(3 dum_via_xy_list)) + 0.37
-					car(nth(3 dum_via_xy_list)) + 0.31 : cadr(nth(3 dum_via_xy_list))
+					car(nth(3 dum_via_xy_list)) + (cminl / 2 + hs_finger / 2 + w_sdm1 / 2) : cadr(nth(3 dum_via_xy_list)) + (w_gatem / 2 + s_m1)
+					car(nth(3 dum_via_xy_list)) + (cminl / 2 + hs_finger / 2 - w_sdm1 / 2) : cadr(nth(3 dum_via_xy_list))
 				)
 			)
 			dbCreateRect(cv list("MET1" "drawing") x)
@@ -574,22 +615,22 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 		;Path.MET2 ------------------------------；
 		SD_via_y_list = list(
 			list(
-				cadr(ep) + cw / 2 - 1.18
-				cadr(ep) + cw / 2
-				cadr(ep) + cw / 2 + 1.18
+				cadr(ep) + cw * 1 / 2 - (w_sdm2 + s_m2)
+				cadr(ep) + cw * 1 / 2
+				cadr(ep) + cw * 1 / 2 + (w_sdm2 + s_m2)
 			)
 			list(
-				cadr(ep) + cw * 3 / 2 + 1.18 + 1.36
-				cadr(ep) + cw * 3 / 2 + 1.36
-				cadr(ep) + cw * 3 / 2 - 1.18 + 1.36
+				cadr(ep) + cw * 3 / 2 + (w_sdm2 + s_m2) + vs_channel
+				cadr(ep) + cw * 3 / 2 + vs_channel
+				cadr(ep) + cw * 3 / 2 - (w_sdm2 + s_m2) + vs_channel
 			)
 		)
 		foreach(x SD_via_y_list
 			foreach(x x
 				dbCreatePath(cv list("MET2" "drawing") list(
-					car(dumfigL~>xy) - 0.48 : x
-					car(dumfigR~>xy) + 0.98 : x
-				) 0.9)
+					car(dumfigL~>xy) - (hs_finger / 2 + w_sdm1 / 2) : x
+					car(dumfigR~>xy) + (hs_finger / 2 + w_sdm1 / 2 + cminl) : x
+				) w_sdm2)
 			)
 		)
 		;Path.MET2 Done
@@ -604,14 +645,14 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 			cond(
 				(type == "ABBA"
 					for(x 0 length(sel) / 4 - 1
-						SD_via_list = append1(SD_via_list ti + 0.27 + cl : nth(2 SD_via_y))
-						ti = ti + 1.08 + 2 * cl
+						SD_via_list = append1(SD_via_list ti + cl + hs_finger / 2 : nth(2 SD_via_y))
+						ti = ti + 2 * (cl + hs_finger)
 					)
 				)
 				(type == "AABBAABB" || type == "AABBBBAA"
 					for(x 0 length(sel) / 4
-						SD_via_list = append1(SD_via_list ti - 0.27 : nth(2 SD_via_y))
-						ti = ti + 1.08 + 2 * cl
+						SD_via_list = append1(SD_via_list ti - hs_finger / 2 : nth(2 SD_via_y))
+						ti = ti + 2 * (cl + hs_finger)
 					)
 				)
 			)
@@ -621,27 +662,27 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 			ti = car(ep)
 			case(type
 				("ABBA"
-						SD_via_list = append1(SD_via_list ti - 0.54 * 1 / 2 + 0 * cl : car(SD_via_y))	;L.A
+						SD_via_list = append1(SD_via_list ti - hs_finger * 1 / 2 + 0 * cl : car(SD_via_y))	;L.A
 					for(x 0 length(sel) / 8 - 1
-						SD_via_list = append1(SD_via_list ti + 0.54 * 3 / 2 + 2 * cl : cadr(SD_via_y))	;BB
-						SD_via_list = append1(SD_via_list ti + 0.54 * 7 / 2 + 4 * cl : car(SD_via_y))	;AA R.A
-						ti = ti + 4 * (0.54 + cl)
+						SD_via_list = append1(SD_via_list ti + hs_finger * 3 / 2 + 2 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + hs_finger * 7 / 2 + 4 * cl : car(SD_via_y))	;AA & R.A
+						ti = ti + 4 * (cl + hs_finger)
 					)
 				)
 				("AABBAABB"
 					for(x 0 length(sel) / 8 - 1
-						SD_via_list = append1(SD_via_list ti + 0.54 * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
-						SD_via_list = append1(SD_via_list ti + 0.54 * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
-						ti = ti + 4 * (0.54 + cl)
+						SD_via_list = append1(SD_via_list ti + hs_finger * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
+						SD_via_list = append1(SD_via_list ti + hs_finger * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
+						ti = ti + 4 * (cl + hs_finger)
 					)
 				)
 				("AABBBBAA"
 					for(x 0 length(sel) / 16 - 1
-						SD_via_list = append1(SD_via_list ti + 0.54 * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
-						SD_via_list = append1(SD_via_list ti + 0.54 * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
-						SD_via_list = append1(SD_via_list ti + 0.54 * 9 / 2 + 5 * cl : cadr(SD_via_y))	;BB
-						SD_via_list = append1(SD_via_list ti + 0.54 * 13 / 2 + 7 * cl : car(SD_via_y))	;AA
-						ti = ti + 4.32 + 8 * cl
+						SD_via_list = append1(SD_via_list ti + hs_finger * 1 / 2 + 1 * cl : car(SD_via_y))	;AA
+						SD_via_list = append1(SD_via_list ti + hs_finger * 5 / 2 + 3 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + hs_finger * 9 / 2 + 5 * cl : cadr(SD_via_y))	;BB
+						SD_via_list = append1(SD_via_list ti + hs_finger * 13 / 2 + 7 * cl : car(SD_via_y))	;AA
+						ti = ti + 8 * (cl + hs_finger)
 					)
 				)
 			)
@@ -649,13 +690,13 @@ procedure(CommonCenterMos(type fingers @key (mode "L" ) (point "xy"))
 			foreach(x
 				append(SD_via_list
 					list(
-						car(dumfigL~>xy) - 0.27 : nth(2 SD_via_y)
-						car(dumfigR~>xy) + 0.77 : nth(2 SD_via_y)
+						car(dumfigL~>xy) - hs_finger / 2 : nth(2 SD_via_y)
+						car(dumfigR~>xy) + hs_finger / 2 + cminl : nth(2 SD_via_y)
 					)
 				)
 				dbCreateVia(cv techFindViaDefByName(tech "M2_M1c") x "R0" list(
 					list("cutRows" 2)
-					list("cutSpacing" 0.26 : 0.26)
+					list("cutSpacing" s_via : s_via)
 				))
 			)
 		)
